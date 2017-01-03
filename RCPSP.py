@@ -66,7 +66,7 @@ def make_dictionary(csv_data):
 
     task_headers = strip_blanks([val for sublist in csv_data[5:6] for val in sublist])
     task_data = csv_data[6:]
-    task_dictionary = []
+    task_dictionary = {}
 
     for i in range(0,len(task_data)):
         mini_task_data = task_data[i]
@@ -82,7 +82,8 @@ def make_dictionary(csv_data):
 
         mini_task_data[len(task_headers):] = ''
         mini_task_data = strip_blanks(mini_task_data)
-        task_dictionary.append(mini_task_data)
+        task_dictionary[i+1] = {}
+        task_dictionary[i+1] = dict(zip(task_headers,mini_task_data))
 
     #task_dictionary = dict(zip(task_headers,task_dictionary))
     #print(dictionary)
