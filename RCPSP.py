@@ -1,7 +1,9 @@
 def main():
-    openfile()
+    #project_number = openfile()
     # to get raw printout, print(repr(<string>))
     #database_fill(0,1)
+    project_number = 13
+    pull_inputs(project_number)
 
 def openfile():
     file = input("Please type the filename (including path) for the project:")
@@ -12,12 +14,14 @@ def openfile():
         print("Converting RCP file to appropriate format...")
         convert_rcp(raw_data)
         project_number = name_project()
+        return(project_number)
     elif (raw_data[0:9] == "Resources" and raw_data[find_nth(raw_data,"\n",4) +
             1:find_nth(raw_data,"\n",4) + 6] == "Tasks"):
         print("File is in appropriate format!")
         csv_data = import_csv(file)
         project_number = name_project()
         make_dictionary(csv_data,project_number)
+        return(project_number)
     else:
         print("Error - the selected file appears to be in the wrong format.")
 
@@ -154,7 +158,6 @@ def resources_fill(resource_dictionary,project_number):
     db = MySQLdb.connect("localhost", "root", "stinkydogfarts", 
         "scheduling_problems")
     c = db.cursor()
-    print(resource_dictionary)
     for i in range(1,len(resource_dictionary)+1):
         c.execute("""INSERT INTO resources (project_num, resource_number, 
             resource_name, capacity)
@@ -166,3 +169,101 @@ def resources_fill(resource_dictionary,project_number):
     #c.execute("""SELECT * FROM resources""")
     #storage = c.fetchall()
     #print(storage)
+
+def pull_inputs(project_number):
+    import _mysql
+    import MySQLdb
+    import MySQLdb.cursors
+
+    db = MySQLdb.connect("localhost", "root", "stinkydogfarts", 
+        "scheduling_problems", cursorclass=MySQLdb.cursors.DictCursor)
+    c = db.cursor()
+    c.execute("""SELECT * FROM projects WHERE 
+        project_id = (%s)""", ([project_number]))
+    project_data = c.fetchone()
+
+    c.execute("""SELECT * FROM jobs WHERE project_num = (%s)""", 
+        ([project_number]))
+    job_data = c.fetchall()
+
+    c.execute("""SELECT * FROM resources WHERE project_num = (%s)""", 
+        ([project_number]))
+    resource_data = c.fetchall()
+
+    conditions_table(project_number,job_data)
+
+def conditions_table(project_number,job_data):
+    import json
+
+    task_pairs = []
+
+    for i in range(0,len(job_data)):
+        predecessor = job_data[i]["job_number"]
+        successors = json.loads(str(job_data[i]["successors"]).replace("'",'"'))
+        for i in range(0,len(successors)):
+            if len(successors[i]) == 0:
+                successors[i] = 0
+            task_pairs.append((predecessor,int(successors[i])))
+    schedule_tasks(project_number,job_data,task_pairs)
+
+def schedule_tasks(project_number,job_data,task_pairs):
+    scheduled_tasks = []
+    to_schedule = []
+    task_durations = []
+
+    # Create a list of tasks and lengths
+    for i in range(0,len(job_data)):
+        task = job_data[i]["job_number"]
+        duration = job_data[i]["duration"]
+        task_durations.append((task,duration))
+
+    # Schedule any tasks that do not have predecessors - need to fix to deal with tasks with 0 as predecessor
+    for k, v in task_pairs:
+        if k not in [i[1] for i in task_pairs]:
+            to_schedule.append(k)
+
+    to_schedule = set(to_schedule)
+    schedule = {}
+
+    for i in to_schedule:
+        schedule[i] = {}
+        schedule[i]["start_time"] = 0
+        for task, duration in task_durations:
+            if task == i:
+                task_length = duration
+
+        schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
+
+    # Schedule tasks whose predecessors have all been scheduled.
+    limited_task_pairs = task_pairs
+
+    while limited_task_pairs:
+        for i in to_schedule:
+            limited_task_pairs = list(filter(lambda k : k[0] != i, limited_task_pairs))
+        #    for k in reversed(task_pairs):
+        #        print(k[0])
+        #        if k[0] == i:
+        #            task_pairs.remove(k)
+
+        to_schedule = []
+
+        for k, v in limited_task_pairs:
+            if k not in [i[1] for i in limited_task_pairs]:
+                to_schedule.append(k)
+
+        to_schedule = set(to_schedule)
+
+        for i in to_schedule:
+            schedule[i] = {}
+            predecessors = []
+            for k, v in task_pairs:
+                if v == i:
+                    predecessors.append(schedule[k]["end_time"])
+            schedule[i]["start_time"] = max(predecessors)
+            for task, duration in task_durations:
+                if task == i:
+                    task_length = duration
+
+            schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
+
+    print(schedule)
