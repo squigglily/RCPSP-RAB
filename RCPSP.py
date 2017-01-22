@@ -1,12 +1,23 @@
 def main():
+    new_or_rerun = input("Welcome to RCPSP-Lab.  Please type 'N' to enter " 
+    "a new dataset or 'E' to work with an existing dataset.  Type 'Q' to quit: ")
+
+    if new_or_rerun == "N":
+        project_number = openfile()
+    elif new_or_rerun == "E":
+        project_number = input("\nPlease type the project number: ")
+        pull_inputs(project_number)
+    elif new_or_rerun == "Q":
+        print("\nExiting RCPSP-Lab.\n")
+    else:
+        print("\nSorry, your input was not recognized.\n")
+        main()
+
     #project_number = openfile()
     # to get raw printout, print(repr(<string>))
-    #database_fill(0,1)
-    project_number = 13
-    pull_inputs(project_number)
 
 def openfile():
-    file = input("Please type the filename (including path) for the project:")
+    file = input("Please type the filename (including path) for the project: ")
     f = open(file,"r")
     raw_data = f.read()
 
@@ -21,6 +32,7 @@ def openfile():
         csv_data = import_csv(file)
         project_number = name_project()
         make_dictionary(csv_data,project_number)
+        pull_inputs(project_number)
         return(project_number)
     else:
         print("Error - the selected file appears to be in the wrong format.")
@@ -266,4 +278,58 @@ def schedule_tasks(project_number,job_data,task_pairs):
 
             schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
 
-    print(schedule)
+    graph_schedule(project_number,job_data,schedule)
+
+def graph_schedule(project_number,job_data,schedule):
+    from bokeh.plotting import figure, output_file, show, reset_output
+    from bokeh.models import Range1d, HoverTool, ColumnDataSource
+    import pandas as pd
+
+    output_file("schedule.html")
+    p = figure(plot_width = 800, plot_height = 600, 
+        title = "Schedule for Project " + str(project_number), 
+        tools = 'hover')
+    y = []
+    right = []
+    left = []
+    task_name = []
+    max_time = 0
+
+    jobs = []
+
+    #for i in range(0, len(job_data)):
+    #    jobs.append(job_data[i]["job_number"])
+
+    #print(jobs)
+
+    #details = pd.DataFrame(job_data, index = jobs)
+    #print(details)
+    #pd.DataFrame.from_dict(job_data, orient='columns', dtype=None)
+
+    for i in schedule:
+        y.append(i)
+        left.append(int(schedule[i]["start_time"]))
+        right.append(int(schedule[i]["end_time"]))
+        task_name.append("name test")
+        max_task = i
+
+        if int(schedule[i]["end_time"]) > max_time:
+            max_time = int(schedule[i]["end_time"])
+
+    p.hbar(y, .8, right, left, color ="#B3DE69")
+    p.y_range = Range1d(max_task + .5,.5)
+    p.x_range = Range1d(0, max_time)
+    p.xaxis.axis_label = "Time (periods)"
+    p.yaxis.axis_label = "Task"
+    p.ygrid.grid_line_color = None
+
+    # Add task descriptions in hovertool.
+    hover = p.select(dict(type=HoverTool))
+    hover.tooltips = [
+        ("Task Number", '@y'),
+        #("Task Name", '@task_name'),
+        ("Start Time", '@left'),
+        ("End Time", '@right')
+    ]
+    show(p)
+    reset_output()
