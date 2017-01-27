@@ -23,13 +23,16 @@ def openfile():
 
     if raw_data[0].isnumeric() and raw_data[raw_data.find("\n") + 1].isnumeric():
         print("Converting RCP file to appropriate format...")
-        convert_rcp(raw_data)
-        project_number = name_project()
-        return(project_number)
+        csv_data = convert_rcp(raw_data)
+        #print(csv_data)
+        #project_number = name_project()
+        #make_dictionary(csv_data, project_number)
+        #return(project_number)
     elif (raw_data[0:9] == "Resources" and raw_data[find_nth(raw_data,"\n",4) +
             1:find_nth(raw_data,"\n",4) + 6] == "Tasks"):
         print("File is in appropriate format!")
         csv_data = import_csv(file)
+        print(csv_data)
         project_number = name_project()
         make_dictionary(csv_data,project_number)
         pull_inputs(project_number)
@@ -61,7 +64,25 @@ def convert_rcp(raw_data):
         find_nth(raw_data,"\n",2)] + "\n\nTasks,\nDuration," + resource_string \
         + "NumSuccessors,Successors,\n" + raw_data[find_nth(raw_data,"\n",2) + 1:]
     csv_data = list(csv.reader(raw_data.split("\n"), delimiter =","))
-    make_dictionary(csv_data)
+
+    for i in range(6,len(csv_data)):
+        sublist = csv_data[i]
+        resources = sublist[1:num_resources + 1]
+        resource = '0'
+
+        for i in range(0,len(resources)):
+            if int(resources[i]) > 0:
+                resource = csv_data[5][i + 1]
+
+        updated_row = [sublist[0], resource, sublist[1 + len(resources):]]  #NEED TO FIX - CURRENTLY BRINGING IN THIRD PART AS ARRAY
+        # csv_data[i][1 + len(resources)]]
+        print(updated_row)
+
+        #if sublist[1] > 0:
+        #    resource = csv_data[5][1]
+        #    print(resource)
+    #make_dictionary(csv_data)
+    return(csv_data)
 
 def import_csv(file):
     import csv
