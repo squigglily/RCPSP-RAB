@@ -17,6 +17,8 @@ def main():
     # to get raw printout, print(repr(<string>))
 
 def openfile():
+    import sys
+
     file = input("Please type the filename (including path) for the project: ")
     f = open(file,"r")
     raw_data = f.read()
@@ -24,21 +26,18 @@ def openfile():
     if raw_data[0].isnumeric() and raw_data[raw_data.find("\n") + 1].isnumeric():
         print("Converting RCP file to appropriate format...")
         csv_data = convert_rcp(raw_data)
-        #print(csv_data)
-        #project_number = name_project()
-        #make_dictionary(csv_data, project_number)
-        #return(project_number)
     elif (raw_data[0:9] == "Resources" and raw_data[find_nth(raw_data,"\n",4) +
             1:find_nth(raw_data,"\n",4) + 6] == "Tasks"):
         print("File is in appropriate format!")
         csv_data = import_csv(file)
-        print(csv_data)
-        project_number = name_project()
-        make_dictionary(csv_data,project_number)
-        pull_inputs(project_number)
-        return(project_number)
     else:
         print("Error - the selected file appears to be in the wrong format.")
+        sys.exit()
+
+    project_number = name_project()
+    make_dictionary(csv_data,project_number)
+    pull_inputs(project_number)
+    return(project_number)
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -64,24 +63,23 @@ def convert_rcp(raw_data):
         find_nth(raw_data,"\n",2)] + "\n\nTasks,\nDuration," + resource_string \
         + "NumSuccessors,Successors,\n" + raw_data[find_nth(raw_data,"\n",2) + 1:]
     csv_data = list(csv.reader(raw_data.split("\n"), delimiter =","))
-
+    print(csv_data)
     for i in range(6,len(csv_data)):
         sublist = csv_data[i]
         resources = sublist[1:num_resources + 1]
         resource = '0'
+        task_num = i - 5
+        usage = 0
 
-        for i in range(0,len(resources)):
-            if int(resources[i]) > 0:
-                resource = csv_data[5][i + 1]
+        for j in range(0,len(resources)):
+            if int(resources[j]) > 0:
+                resource = csv_data[5][j + 1]
+                usage = int(resources[j])
 
-        updated_row = [sublist[0], resource, sublist[1 + len(resources):]]  #NEED TO FIX - CURRENTLY BRINGING IN THIRD PART AS ARRAY
-        # csv_data[i][1 + len(resources)]]
-        print(updated_row)
+        updated_row = [task_num, task_num, sublist[0], resource, usage] + sublist[2 + len(resources):-1]
 
-        #if sublist[1] > 0:
-        #    resource = csv_data[5][1]
-        #    print(resource)
-    #make_dictionary(csv_data)
+        csv_data[i] = updated_row
+    csv_data[5] = ['Task_Num', 'Task_Name', 'Duration', 'Resource', 'Load', 'Successors']
     return(csv_data)
 
 def import_csv(file):
