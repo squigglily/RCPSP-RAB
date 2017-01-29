@@ -178,9 +178,6 @@ def tasks_fill(task_dictionary,project_number):
                         task_dictionary[i]["Load"], 
                         str(task_dictionary[i]["Successors"])))
     db.commit()
-    #c.execute("""SELECT * FROM jobs""")
-    #storage = c.fetchall()
-    #print(storage)
 
 def resources_fill(resource_dictionary,project_number):
     import _mysql
@@ -241,6 +238,7 @@ def schedule_tasks(project_number,job_data,task_pairs):
     scheduled_tasks = []
     to_schedule = []
     task_durations = []
+    schedule_properties = "forward pass, no resource constraints"
 
     # Create a list of tasks and lengths
     for i in range(0,len(job_data)):
@@ -297,7 +295,34 @@ def schedule_tasks(project_number,job_data,task_pairs):
 
             schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
 
+    schedule_fill(project_number, job_data, schedule, schedule_properties)
     graph_schedule(project_number,job_data,schedule)
+
+def schedule_fill(project_number, job_data, schedule, schedule_properties):
+    import _mysql
+    import MySQLdb
+
+    db = MySQLdb.connect("localhost", "root", "stinkydogfarts", 
+        "scheduling_problems")
+    c = db.cursor()
+    c.execute("""INSERT INTO schedules (project_num, trial_description)
+                    VALUES(%s, %s)""",
+                    ([project_number, schedule_properties]))
+    db.commit()
+    c.execute("""SELECT MAX(id) AS article FROM schedules WHERE 
+    project_num = (%s)""", ([project_number]))
+    trials = c.fetchall()
+    trial_number = int(trials[0][0])
+
+    for i in range(1,len(schedule)+1):
+        c.execute("""INSERT INTO schedule_details (project_num, job_number, 
+            start_time, end_time, trial_number)
+                    VALUES(%s, %s, %s, %s, %s)""",
+                    (project_number, i, 
+                        schedule[i]["start_time"], 
+                        schedule[i]["end_time"], 
+                        trial_number))
+    db.commit()
 
 def graph_schedule(project_number,job_data,schedule):
     from bokeh.plotting import figure, output_file, show, reset_output
@@ -311,25 +336,23 @@ def graph_schedule(project_number,job_data,schedule):
     y = []
     right = []
     left = []
-    task_name = []
+    task_info = {}
+    task_data = []
+
     max_time = 0
 
-    jobs = []
+    for i in range(0,len(job_data)):
+        task = job_data[i]["job_number"]
+        task_name = job_data[i]["job_name"]
+        task_info[task] = task_name
 
-    #for i in range(0, len(job_data)):
-    #    jobs.append(job_data[i]["job_number"])
-
-    #print(jobs)
-
-    #details = pd.DataFrame(job_data, index = jobs)
-    #print(details)
-    #pd.DataFrame.from_dict(job_data, orient='columns', dtype=None)
+    print(task_info)
 
     for i in schedule:
         y.append(i)
         left.append(int(schedule[i]["start_time"]))
         right.append(int(schedule[i]["end_time"]))
-        task_name.append("name test")
+        task_data.append(str(task_info[i]))
         max_task = i
 
         if int(schedule[i]["end_time"]) > max_time:
@@ -346,7 +369,7 @@ def graph_schedule(project_number,job_data,schedule):
     hover = p.select(dict(type=HoverTool))
     hover.tooltips = [
         ("Task Number", '@y'),
-        #("Task Name", '@task_name'),
+        ("Task Name", '@task_data'),
         ("Start Time", '@left'),
         ("End Time", '@right')
     ]
