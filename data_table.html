@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Bokeh Plot</title>
+        
+<link rel="stylesheet" href="https://cdn.pydata.org/bokeh/release/bokeh-0.12.4.min.css" type="text/css" />
+<link rel="stylesheet" href="https://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.4.min.css" type="text/css" />
+        
+<script type="text/javascript" src="https://cdn.pydata.org/bokeh/release/bokeh-0.12.4.min.js"></script>
+<script type="text/javascript" src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.4.min.js"></script>
+<script type="text/javascript">
+    Bokeh.set_log_level("info");
+</script>
+        <style>
+          html {
+            width: 100%;
+            height: 100%;
+          }
+          body {
+            width: 90%;
+            height: 100%;
+            margin: auto;
+          }
+        </style>
+    </head>
+    <body>
+        
+        <div class="bk-root">
+            <div class="bk-plotdiv" id="f21d310b-d0a3-4c02-87df-cd664afbef96"></div>
+        </div>
+        
+        <script type="text/javascript">
+            (function() {
+          var fn = function() {
+            Bokeh.safely(function() {
+              var docs_json = {"d4885d6e-e455-4225-becf-5112b3c72bf6":{"roots":{"references":[{"attributes":{"editor":{"id":"adf700b8-efe0-47c0-ae7e-062d55ad7caf","type":"StringEditor"},"field":"dates","formatter":{"id":"4b7fc70e-dc65-4b6a-81a9-f878b8a17b76","type":"DateFormatter"},"title":"Date"},"id":"0bdbc157-8a61-48d2-afdf-feba55a8b34a","type":"TableColumn"},{"attributes":{"columns":[{"id":"9ffed6e1-908f-44c7-8e62-96894cdace86","type":"TableColumn"},{"id":"4c9ed0d8-ba13-41a6-b79b-a69304c03746","type":"TableColumn"}],"height":280,"source":{"id":"fcfdb499-6e8b-46a7-b644-9a372f3405f7","type":"ColumnDataSource"},"width":400},"id":"5d31d3a3-7efe-43df-9d53-94d5a5a3320a","type":"DataTable"},{"attributes":{},"id":"461951a4-a877-49b7-b528-975237849e17","type":"StringEditor"},{"attributes":{"editor":{"id":"2417d1f5-b187-45cd-abe6-ae0812689edd","type":"StringEditor"},"field":"dates","formatter":{"id":"e83e4fd3-fc33-4d51-bb9d-c678c0496e21","type":"DateFormatter"},"title":"Date"},"id":"52c51a5d-d195-48f0-a557-8637a0aa906e","type":"TableColumn"},{"attributes":{"editor":{"id":"f4c544e2-6748-4a0c-b8a1-055fe62e2f8e","type":"StringEditor"},"field":"downloads","formatter":{"id":"fc3cf7c6-6a5f-4b29-b972-f70c429665fa","type":"StringFormatter"},"title":"Downloads"},"id":"e7456caf-b91d-4a17-9148-51386a77317c","type":"TableColumn"},{"attributes":{"children":[{"id":"f9b64b81-bf9b-4b26-9881-c2a7360b8d77","type":"DataTable"}]},"id":"bb62c5d7-109f-4684-9bd1-652bec25deca","type":"WidgetBox"},{"attributes":{},"id":"fe7702a7-9c98-45ae-ae73-2d0c4d833e17","type":"StringEditor"},{"attributes":{},"id":"2d7eb41f-3525-40f5-8555-eb2ae442f224","type":"StringFormatter"},{"attributes":{"columns":[{"id":"0bdbc157-8a61-48d2-afdf-feba55a8b34a","type":"TableColumn"},{"id":"12793b7e-fae0-48dd-a491-7e009a545852","type":"TableColumn"}],"height":280,"source":{"id":"2a5e44ed-3dc2-4ca8-b798-7027401d31a9","type":"ColumnDataSource"},"width":400},"id":"703fcfc7-ee88-46b9-917c-49513951e859","type":"DataTable"},{"attributes":{"children":[{"id":"5d31d3a3-7efe-43df-9d53-94d5a5a3320a","type":"DataTable"}]},"id":"e306bf45-b389-4009-bd6e-1e65954b65d0","type":"WidgetBox"},{"attributes":{"children":[{"id":"66f773b5-74b3-415a-b648-0d563741a67a","type":"DataTable"}]},"id":"9859ff19-ddf4-4b67-b4a6-20fa464f6cf4","type":"WidgetBox"},{"attributes":{"callback":null,"column_names":["downloads","dates"],"data":{"dates":[1393653600000.0,1393740000000.0,1393826400000.0,1393912800000.0,1393999200000.0,1394085600000.0,1394172000000.0,1394258400000.0,1394344800000.0,1394427600000.0],"downloads":[38,83,89,35,77,13,87,52,94,93]}},"id":"54ac20ff-5267-44d0-8af0-794770ae381b","type":"ColumnDataSource"},{"attributes":{},"id":"38feef48-6a82-41e9-90ca-d3663a98ac62","type":"StringFormatter"},{"attributes":{"editor":{"id":"8982727b-3a6b-48b2-a090-0023bfee47f6","type":"StringEditor"},"field":"downloads","formatter":{"id":"399a9fda-2114-42f0-ba50-e6a088dac74d","type":"StringFormatter"},"title":"Downloads"},"id":"4c9ed0d8-ba13-41a6-b79b-a69304c03746","type":"TableColumn"},{"attributes":{},"id":"4b7fc70e-dc65-4b6a-81a9-f878b8a17b76","type":"DateFormatter"},{"attributes":{"editor":{"id":"f9852cbf-2155-46e6-b76f-ae79090d5102","type":"StringEditor"},"field":"dates","formatter":{"id":"2b3dcf50-795a-4e5c-81eb-44d14f1d0473","type":"DateFormatter"},"title":"Date"},"id":"f46f4050-d093-4e87-8ab3-339c3674c975","type":"TableColumn"},{"attributes":{},"id":"adf700b8-efe0-47c0-ae7e-062d55ad7caf","type":"StringEditor"},{"attributes":{},"id":"8982727b-3a6b-48b2-a090-0023bfee47f6","type":"StringEditor"},{"attributes":{"editor":{"id":"fe7702a7-9c98-45ae-ae73-2d0c4d833e17","type":"StringEditor"},"field":"downloads","formatter":{"id":"38feef48-6a82-41e9-90ca-d3663a98ac62","type":"StringFormatter"},"title":"Downloads"},"id":"788cea9e-7878-4fc4-9d6d-232c9be7495e","type":"TableColumn"},{"attributes":{"callback":null,"column_names":["downloads","dates"],"data":{"dates":[1393653600000.0,1393740000000.0,1393826400000.0,1393912800000.0,1393999200000.0,1394085600000.0,1394172000000.0,1394258400000.0,1394344800000.0,1394427600000.0],"downloads":[67,9,31,50,0,4,47,66,12,39]}},"id":"eec04592-fcca-4fac-bbe2-6ea897a59c28","type":"ColumnDataSource"},{"attributes":{},"id":"2417d1f5-b187-45cd-abe6-ae0812689edd","type":"StringEditor"},{"attributes":{},"id":"f9852cbf-2155-46e6-b76f-ae79090d5102","type":"StringEditor"},{"attributes":{},"id":"fc3cf7c6-6a5f-4b29-b972-f70c429665fa","type":"StringFormatter"},{"attributes":{},"id":"2b3dcf50-795a-4e5c-81eb-44d14f1d0473","type":"DateFormatter"},{"attributes":{},"id":"399a9fda-2114-42f0-ba50-e6a088dac74d","type":"StringFormatter"},{"attributes":{"children":[{"id":"703fcfc7-ee88-46b9-917c-49513951e859","type":"DataTable"}]},"id":"deadfee3-70ec-45b4-8aac-1923860953ec","type":"WidgetBox"},{"attributes":{"columns":[{"id":"52c51a5d-d195-48f0-a557-8637a0aa906e","type":"TableColumn"},{"id":"788cea9e-7878-4fc4-9d6d-232c9be7495e","type":"TableColumn"}],"height":280,"source":{"id":"eec04592-fcca-4fac-bbe2-6ea897a59c28","type":"ColumnDataSource"},"width":400},"id":"f9b64b81-bf9b-4b26-9881-c2a7360b8d77","type":"DataTable"},{"attributes":{},"id":"0c743354-8c8e-494e-9859-da660a6276e5","type":"DateFormatter"},{"attributes":{"editor":{"id":"22e3da01-df86-4328-ba6f-247d5e28aaff","type":"StringEditor"},"field":"dates","formatter":{"id":"0c743354-8c8e-494e-9859-da660a6276e5","type":"DateFormatter"},"title":"Date"},"id":"9ffed6e1-908f-44c7-8e62-96894cdace86","type":"TableColumn"},{"attributes":{},"id":"f4c544e2-6748-4a0c-b8a1-055fe62e2f8e","type":"StringEditor"},{"attributes":{"editor":{"id":"461951a4-a877-49b7-b528-975237849e17","type":"StringEditor"},"field":"downloads","formatter":{"id":"2d7eb41f-3525-40f5-8555-eb2ae442f224","type":"StringFormatter"},"title":"Downloads"},"id":"12793b7e-fae0-48dd-a491-7e009a545852","type":"TableColumn"},{"attributes":{"columns":[{"id":"f46f4050-d093-4e87-8ab3-339c3674c975","type":"TableColumn"},{"id":"e7456caf-b91d-4a17-9148-51386a77317c","type":"TableColumn"}],"height":280,"source":{"id":"54ac20ff-5267-44d0-8af0-794770ae381b","type":"ColumnDataSource"},"width":400},"id":"66f773b5-74b3-415a-b648-0d563741a67a","type":"DataTable"},{"attributes":{"callback":null,"column_names":["downloads","dates"],"data":{"dates":[1393653600000.0,1393740000000.0,1393826400000.0,1393912800000.0,1393999200000.0,1394085600000.0,1394172000000.0,1394258400000.0,1394344800000.0,1394427600000.0],"downloads":[2,12,39,21,62,64,44,89,67,87]}},"id":"2a5e44ed-3dc2-4ca8-b798-7027401d31a9","type":"ColumnDataSource"},{"attributes":{},"id":"e83e4fd3-fc33-4d51-bb9d-c678c0496e21","type":"DateFormatter"},{"attributes":{"callback":null,"column_names":["downloads","dates"],"data":{"dates":[1393653600000.0,1393740000000.0,1393826400000.0,1393912800000.0,1393999200000.0,1394085600000.0,1394172000000.0,1394258400000.0,1394344800000.0,1394427600000.0],"downloads":[87,28,72,1,27,69,2,41,94,78]}},"id":"fcfdb499-6e8b-46a7-b644-9a372f3405f7","type":"ColumnDataSource"},{"attributes":{},"id":"22e3da01-df86-4328-ba6f-247d5e28aaff","type":"StringEditor"}],"root_ids":["deadfee3-70ec-45b4-8aac-1923860953ec","e306bf45-b389-4009-bd6e-1e65954b65d0","bb62c5d7-109f-4684-9bd1-652bec25deca","9859ff19-ddf4-4b67-b4a6-20fa464f6cf4"]},"title":"Bokeh Application","version":"0.12.4"}};
+              var render_items = [{"docid":"d4885d6e-e455-4225-becf-5112b3c72bf6","elementid":"f21d310b-d0a3-4c02-87df-cd664afbef96","modelid":"9859ff19-ddf4-4b67-b4a6-20fa464f6cf4"}];
+              
+              Bokeh.embed.embed_items(docs_json, render_items);
+            });
+          };
+          if (document.readyState != "loading") fn();
+          else document.addEventListener("DOMContentLoaded", fn);
+        })();
+        
+        </script>
+    </body>
+</html>

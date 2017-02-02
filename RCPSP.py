@@ -329,29 +329,61 @@ def graph_schedule(project_number,job_data,schedule):
     from bokeh.models import Range1d, HoverTool, ColumnDataSource
     from bokeh.models.widgets import DataTable, DateFormatter, TableColumn
     from bokeh.io import vform
+    from bokeh.layouts import widgetbox, column
     import pandas as pd
 
-    expanded_job_data = job_data
+    data = job_data
 
-    for i in range(0,len(expanded_job_data)):
+    for i in range(0,len(data)):
         for j in range(1,len(schedule) + 1):
-            if j == expanded_job_data[i]["job_number"]:
-                expanded_job_data[i]["end_time"] = schedule[j]["end_time"]
-                expanded_job_data[i]["start_time"] = schedule[j]["start_time"]
-
-    print(expanded_job_data)
-
-    data = expanded_job_data
+            if j == data[i]["job_number"]:
+                data[i]["end_time"] = schedule[j]["end_time"]
+                data[i]["start_time"] = schedule[j]["start_time"]
     print(data)
-    source = ColumnDataSource(data)
-    columns = [
-            TableColumn(field = "job_number", Title = "Task Number"),
-            TableColumn(field = "job_name", Title = "Task Name")
-        ]
-    
-    data_table = DataTable(source=source, columns = columns, width = 800, height = 400)
+
+    job_number = []
+    job_name = []
+    start_time = []
+    end_time = []
+    resource_number = []
+    resource_load = []
+    successors = []
+
+    for i in range(0,len(data)):
+        job_number.append(data[i]["job_number"])
+        job_name.append(data[i]["job_name"])
+        start_time.append(data[i]["start_time"])
+        end_time.append(data[i]["end_time"])
+        resource_number.append(data[i]["resource_number"])
+        resource_load.append(data[i]["resource_load"])
+        successors.append(data[i]["successors"])
+
 
     output_file("schedule.html")
+
+    data = dict(
+            task_number = job_number, 
+            task_name = job_name,
+            start = start_time,
+            end = end_time,
+            resource = resource_number,
+            load = resource_load,
+            next = successors,
+        )
+
+    source = ColumnDataSource(data)
+    columns = [
+            TableColumn(field = "task_number", title = "Task Number"),
+            TableColumn(field = "task_name", title = "Task Name"),
+            TableColumn(field = "start", title = "Start Time"),
+            TableColumn(field = "end", title = "End Time"),
+            TableColumn(field = "resource", title = "Resource #"),
+            TableColumn(field = "load", title = "Resource Load"),
+            TableColumn(field = "next", title = "Successors")
+        ]
+    
+    data_table = DataTable(source = source, columns = columns, width = 800, height = 400)
+
     p = figure(plot_width = 800, plot_height = 600, 
         title = "Schedule for Project " + str(project_number), 
         tools = 'hover')
@@ -393,7 +425,7 @@ def graph_schedule(project_number,job_data,schedule):
         ("Start Time", '@left'),
         ("End Time", '@right')
     ]
-    show(p)
+    show(column(p,widgetbox(data_table)))
     reset_output()
 
 # def backup_graph(project_number,job_data,schedule):
