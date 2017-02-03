@@ -329,7 +329,7 @@ def graph_schedule(project_number,job_data,schedule):
     from bokeh.models import Range1d, HoverTool, ColumnDataSource
     from bokeh.models.widgets import DataTable, DateFormatter, TableColumn
     from bokeh.io import vform
-    from bokeh.layouts import widgetbox, column
+    from bokeh.layouts import widgetbox, column, row
     import pandas as pd
 
     data = job_data
@@ -382,35 +382,18 @@ def graph_schedule(project_number,job_data,schedule):
             TableColumn(field = "next", title = "Successors")
         ]
     
-    data_table = DataTable(source = source, columns = columns, width = 800, height = 400)
+    data_table = DataTable(source = source, columns = columns, 
+        width = 600, height = 850, fit_columns = True, row_headers = False,
+        selectable = True)
 
     p = figure(plot_width = 800, plot_height = 600, 
         title = "Schedule for Project " + str(project_number), 
-        tools = 'hover')
-    y = []
-    right = []
-    left = []
-    task_info = {}
-    task_data = []
+        tools = 'tap,hover')
 
-    max_time = 0
+    max_task = max(data["task_number"])
+    max_time = max(data["end"])
 
-    for i in range(0,len(job_data)):
-        task = job_data[i]["job_number"]
-        task_name = job_data[i]["job_name"]
-        task_info[task] = task_name
-
-    for i in schedule:
-        y.append(i)
-        left.append(int(schedule[i]["start_time"]))
-        right.append(int(schedule[i]["end_time"]))
-        task_data.append(str(task_info[i]))
-        max_task = i
-
-        if int(schedule[i]["end_time"]) > max_time:
-            max_time = int(schedule[i]["end_time"])
-
-    p.hbar(y, .8, right, left, color ="#B3DE69")
+    p.hbar(data["task_number"], .8, data["end"], data["start"], color ="#B3DE69")
     p.y_range = Range1d(max_task + .5,.5)
     p.x_range = Range1d(0, max_time)
     p.xaxis.axis_label = "Time (periods)"
@@ -421,69 +404,6 @@ def graph_schedule(project_number,job_data,schedule):
     hover = p.select(dict(type=HoverTool))
     hover.tooltips = [
         ("Task Number", '@y'),
-        ("Task Name", '@task_data'),
-        ("Start Time", '@left'),
-        ("End Time", '@right')
     ]
-    show(column(p,widgetbox(data_table)))
+    show(row(p,widgetbox(data_table)))
     reset_output()
-
-# def backup_graph(project_number,job_data,schedule):
-#     from bokeh.plotting import figure, output_file, show, reset_output
-#     from bokeh.models import Range1d, HoverTool, ColumnDataSource, DataTable
-#     import pandas as pd
-
-#     expanded_job_data = job_data
-
-#     for i in range(0,len(expanded_job_data)):
-#         for j in range(1,len(schedule) + 1):
-#             if j == expanded_job_data[i]["job_number"]:
-#                 expanded_job_data[i]["end_time"] = schedule[j]["end_time"]
-#                 expanded_job_data[i]["start_time"] = schedule[j]["start_time"]
-
-#     print(expanded_job_data)
-
-#     output_file("schedule.html")
-#     p = figure(plot_width = 800, plot_height = 600, 
-#         title = "Schedule for Project " + str(project_number), 
-#         tools = 'hover')
-#     y = []
-#     right = []
-#     left = []
-#     task_info = {}
-#     task_data = []
-
-#     max_time = 0
-
-#     for i in range(0,len(job_data)):
-#         task = job_data[i]["job_number"]
-#         task_name = job_data[i]["job_name"]
-#         task_info[task] = task_name
-
-#     for i in schedule:
-#         y.append(i)
-#         left.append(int(schedule[i]["start_time"]))
-#         right.append(int(schedule[i]["end_time"]))
-#         task_data.append(str(task_info[i]))
-#         max_task = i
-
-#         if int(schedule[i]["end_time"]) > max_time:
-#             max_time = int(schedule[i]["end_time"])
-
-#     p.hbar(y, .8, right, left, color ="#B3DE69")
-#     p.y_range = Range1d(max_task + .5,.5)
-#     p.x_range = Range1d(0, max_time)
-#     p.xaxis.axis_label = "Time (periods)"
-#     p.yaxis.axis_label = "Task"
-#     p.ygrid.grid_line_color = None
-
-#     # Add task descriptions in hovertool.
-#     hover = p.select(dict(type=HoverTool))
-#     hover.tooltips = [
-#         ("Task Number", '@y'),
-#         ("Task Name", '@task_data'),
-#         ("Start Time", '@left'),
-#         ("End Time", '@right')
-#     ]
-#     show(p)
-#     reset_output()
