@@ -63,7 +63,6 @@ def convert_rcp(raw_data):
         find_nth(raw_data,"\n",2)] + "\n\nTasks,\nDuration," + resource_string \
         + "NumSuccessors,Successors,\n" + raw_data[find_nth(raw_data,"\n",2) + 1:]
     csv_data = list(csv.reader(raw_data.split("\n"), delimiter =","))
-    print(csv_data)
     for i in range(6,len(csv_data)):
         sublist = csv_data[i]
         resources = sublist[1:num_resources + 1]
@@ -218,9 +217,9 @@ def pull_inputs(project_number):
         ([project_number]))
     resource_data = c.fetchall()
 
-    conditions_table(project_number,job_data)
+    conditions_table(project_number,job_data, resource_data)
 
-def conditions_table(project_number,job_data):
+def conditions_table(project_number,job_data,resource_data):
     import json
 
     task_pairs = []
@@ -232,9 +231,10 @@ def conditions_table(project_number,job_data):
             if len(successors[i]) == 0:
                 successors[i] = 0
             task_pairs.append((predecessor,int(successors[i])))
-    schedule_tasks(project_number,job_data,task_pairs)
+    #schedule_tasks(project_number,job_data,task_pairs, resource_data)
+    schedule_with_constraints(project_number,job_data,task_pairs, resource_data)
 
-def schedule_tasks(project_number,job_data,task_pairs):
+def schedule_tasks(project_number,job_data,task_pairs, resource_data):
     scheduled_tasks = []
     to_schedule = []
     task_durations = []
@@ -339,7 +339,6 @@ def graph_schedule(project_number,job_data,schedule):
             if j == data[i]["job_number"]:
                 data[i]["end_time"] = schedule[j]["end_time"]
                 data[i]["start_time"] = schedule[j]["start_time"]
-    print(data)
 
     job_number = []
     job_name = []
@@ -407,3 +406,102 @@ def graph_schedule(project_number,job_data,schedule):
     ]
     show(row(p,widgetbox(data_table)))
     reset_output()
+
+def schedule_with_constraints(project_number,job_data,task_pairs, resource_data):
+    scheduled_tasks = []
+    to_schedule = []
+    task_durations = []
+    schedule_properties = "forward pass, with resource contraints and random guessing"
+    
+    # Create a list of tasks and lengths
+    for i in range(0,len(job_data)):
+        task = job_data[i]["job_number"]
+        duration = job_data[i]["duration"]
+        task_durations.append((task,duration))
+
+    # Schedule any tasks that do not have predecessors - need to fix to deal with tasks with 0 as predecessor
+    for k, v in task_pairs:
+        if k not in [i[1] for i in task_pairs]:
+            to_schedule.append(k)
+
+    to_schedule = set(to_schedule)
+    schedule = {}
+
+    for i in to_schedule:
+        schedule[i] = {}
+        schedule[i]["start_time"] = 0
+        for task, duration in task_durations:
+            if task == i:
+                task_length = duration
+
+        schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
+
+    # Schedule tasks whose predecessors have all been scheduled.
+    limited_task_pairs = task_pairs
+
+    while limited_task_pairs:
+        for i in to_schedule:
+            limited_task_pairs = list(filter(lambda k : k[0] != i, limited_task_pairs))
+
+        to_schedule = []
+
+        for k, v in limited_task_pairs:
+            if k not in [i[1] for i in limited_task_pairs]:
+                to_schedule.append(k)
+
+        to_schedule = set(to_schedule)
+
+        for i in to_schedule:
+            predecessors = []
+            for k, v in task_pairs:
+                if v == i:
+                    predecessors.append(schedule[k]["end_time"])
+            check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data)
+            schedule[i] = {}
+            schedule[i]["start_time"] = max(predecessors)
+            for task, duration in task_durations:
+                if task == i:
+                    task_length = duration
+
+            schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
+
+    schedule_fill(project_number, job_data, schedule, schedule_properties)
+    graph_schedule(project_number,job_data,schedule)
+
+def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data):
+    #print(schedule)
+    #print(to_schedule)
+
+    # First, check to see if there is enough capacity for the task to start.
+    task_number = i
+    desired_start = max(predecessors)
+    potential_conflicts = []
+    conflict_details = {}
+
+    for i in schedule:
+        if schedule[i]["start_time"] <= desired_start and \
+                schedule[i]["end_time"] > desired_start:
+            potential_conflicts.append(i)
+
+    if len(potential_conflicts) == 0:
+        print("OK to start...but don't know if there will be conflicts later.")
+    else:
+        for i in range(0,len(job_data)):
+            if int(job_data[i]["job_number"]) == task_number:
+                conflict_details[task_number] = {}
+                conflict_details[task_number]["resource_number"] = job_data[i]["resource_number"]
+                conflict_details[task_number]["resource_load"] = job_data[i]["resource_load"]
+            elif job_data[i]["job_number"] in potential_conflicts:
+                conflict_details[job_data[i]["job_number"]] = {}
+                conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
+                conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
+        total_load = job_data[task_number]["resource_load"]
+        for i in potential_conflicts:
+            if job_data[i]["resource_number"] == job_data[task_number]["resource_number"]:
+                total_load = total_load + job_data[i]["resource_load"]
+        for i in range(0,len(resource_data)):
+            if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+                if total_load > resource_data[i]["capacity"]:
+                    print("Oh noes!  The resource requirements have exceeded the capacity!")
+                else:
+                    print("The resource is shared among tasks, but there is capacity to start.")
