@@ -468,40 +468,84 @@ def schedule_with_constraints(project_number,job_data,task_pairs, resource_data)
     schedule_fill(project_number, job_data, schedule, schedule_properties)
     graph_schedule(project_number,job_data,schedule)
 
-def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data):
-    #print(schedule)
-    #print(to_schedule)
+# def check_constraints_first(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data):
+#     #print(schedule)
+#     #print(to_schedule)
 
-    # First, check to see if there is enough capacity for the task to start.
+#     # First, check to see if there is enough capacity for the task to start.
+#     task_number = i
+#     desired_start = max(predecessors)
+#     potential_conflicts = []
+#     conflict_details = {}
+#     for i in schedule:
+#         if schedule[i]["start_time"] <= desired_start and \
+#                 schedule[i]["end_time"] > desired_start:
+#             potential_conflicts.append(i)
+
+#     if len(potential_conflicts) == 0:
+#         print("OK to start...but don't know if there will be conflicts later.")
+#     else:
+#         for i in range(0,len(job_data)):
+#             if int(job_data[i]["job_number"]) == task_number:
+#                 conflict_details[task_number] = {}
+#                 conflict_details[task_number]["resource_number"] = job_data[i]["resource_number"]
+#                 conflict_details[task_number]["resource_load"] = job_data[i]["resource_load"]
+#             elif job_data[i]["job_number"] in potential_conflicts:
+#                 conflict_details[job_data[i]["job_number"]] = {}
+#                 conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
+#                 conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
+#         total_load = job_data[task_number]["resource_load"]
+#         for i in potential_conflicts:
+#             if job_data[i]["resource_number"] == job_data[task_number]["resource_number"]:
+#                 total_load = total_load + job_data[i]["resource_load"]
+#         for i in range(0,len(resource_data)):
+#             if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+#                 if total_load > resource_data[i]["capacity"]:
+#                     print("Oh noes!  The resource requirements have exceeded the capacity!")
+#                 else:
+#                     print("The resource is shared among tasks, but there is capacity to start.")
+
+def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data):
+    # Check to see if there is enough capacity to perform the task.
     task_number = i
     desired_start = max(predecessors)
     potential_conflicts = []
     conflict_details = {}
 
+    for i in range(0,len(job_data)):
+        if int(job_data[i]["job_number"]) == task_number:
+            duration = job_data[i]["duration"]
+
     for i in schedule:
-        if schedule[i]["start_time"] <= desired_start and \
+        if schedule[i]["start_time"] <= desired_start + duration and \
                 schedule[i]["end_time"] > desired_start:
             potential_conflicts.append(i)
 
     if len(potential_conflicts) == 0:
-        print("OK to start...but don't know if there will be conflicts later.")
+        print("There are no conflicts.  Task may be scheduled.")
     else:
         for i in range(0,len(job_data)):
             if int(job_data[i]["job_number"]) == task_number:
                 conflict_details[task_number] = {}
                 conflict_details[task_number]["resource_number"] = job_data[i]["resource_number"]
                 conflict_details[task_number]["resource_load"] = job_data[i]["resource_load"]
+                conflict_details[task_number]["start_time"] = desired_start
+                conflict_details[task_number]["duration"] = duration
             elif job_data[i]["job_number"] in potential_conflicts:
                 conflict_details[job_data[i]["job_number"]] = {}
                 conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
                 conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
-        total_load = job_data[task_number]["resource_load"]
-        for i in potential_conflicts:
-            if job_data[i]["resource_number"] == job_data[task_number]["resource_number"]:
-                total_load = total_load + job_data[i]["resource_load"]
-        for i in range(0,len(resource_data)):
-            if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
-                if total_load > resource_data[i]["capacity"]:
-                    print("Oh noes!  The resource requirements have exceeded the capacity!")
-                else:
-                    print("The resource is shared among tasks, but there is capacity to start.")
+                conflict_details[job_data[i]["job_number"]]["start_time"] = schedule[job_data[i]["job_number"]]["start_time"]
+                conflict_details[job_data[i]["job_number"]]["duration"] = job_data[i]["duration"]
+        for time in range(desired_start, desired_start + duration):
+            total_load = job_data[task_number]["resource_load"]
+            for i in potential_conflicts:
+                if conflict_details[i]["start_time"] <= time and conflict_details[i]["start_time"] + conflict_details[i]["duration"] > time:
+                    if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"] and i != task_number:
+                        total_load = total_load + job_data[i]["resource_load"]
+            for i in range(0,len(resource_data)):
+                if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+                    if total_load > resource_data[i]["capacity"]:
+                        print("Oh noes!  The resource requirements have exceeded the capacity!")
+                    else:
+                        print("The resource is shared among tasks, but there is capacity at this time.")
