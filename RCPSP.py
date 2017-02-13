@@ -452,60 +452,28 @@ def schedule_with_constraints(project_number,job_data,task_pairs, resource_data,
                 to_schedule.append(k)
 
         to_schedule = set(to_schedule)
-
+        print(to_schedule)
+        print(task_pairs)
         for i in to_schedule:
             predecessors = []
             for k, v in task_pairs:
                 if v == i:
                     predecessors.append(schedule[k]["end_time"])
-            check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data, selected_rule)
-            schedule[i] = {}
-            schedule[i]["start_time"] = max(predecessors)
+            next_task = check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data, selected_rule)
+            predecessors = []
+            for k, v in task_pairs:
+                if v == next_task:
+                    predecessors.append(schedule[k]["end_time"])
+            schedule[next_task] = {}
+            schedule[next_task]["start_time"] = max(predecessors)
             for task, duration in task_durations:
-                if task == i:
+                if task == next_task:
                     task_length = duration
 
-            schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
+            schedule[next_task]["end_time"] = schedule[next_task]["start_time"] + task_length
 
     schedule_fill(project_number, job_data, schedule, schedule_properties)
     graph_schedule(project_number,job_data,schedule)
-
-# def check_constraints_first(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data):
-#     #print(schedule)
-#     #print(to_schedule)
-
-#     # First, check to see if there is enough capacity for the task to start.
-#     task_number = i
-#     desired_start = max(predecessors)
-#     potential_conflicts = []
-#     conflict_details = {}
-#     for i in schedule:
-#         if schedule[i]["start_time"] <= desired_start and \
-#                 schedule[i]["end_time"] > desired_start:
-#             potential_conflicts.append(i)
-
-#     if len(potential_conflicts) == 0:
-#         print("OK to start...but don't know if there will be conflicts later.")
-#     else:
-#         for i in range(0,len(job_data)):
-#             if int(job_data[i]["job_number"]) == task_number:
-#                 conflict_details[task_number] = {}
-#                 conflict_details[task_number]["resource_number"] = job_data[i]["resource_number"]
-#                 conflict_details[task_number]["resource_load"] = job_data[i]["resource_load"]
-#             elif job_data[i]["job_number"] in potential_conflicts:
-#                 conflict_details[job_data[i]["job_number"]] = {}
-#                 conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
-#                 conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
-#         total_load = job_data[task_number]["resource_load"]
-#         for i in potential_conflicts:
-#             if job_data[i]["resource_number"] == job_data[task_number]["resource_number"]:
-#                 total_load = total_load + job_data[i]["resource_load"]
-#         for i in range(0,len(resource_data)):
-#             if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
-#                 if total_load > resource_data[i]["capacity"]:
-#                     print("Oh noes!  The resource requirements have exceeded the capacity!")
-#                 else:
-#                     print("The resource is shared among tasks, but there is capacity to start.")
 
 def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data, selected_rule):
     # Check to see if there is enough capacity to perform the task.
@@ -527,6 +495,7 @@ def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedul
 
     if len(potential_conflicts) == 0:
         print("There are no conflicts.  Task may be scheduled.")
+        return(task_number)
     else:
         for i in range(0,len(job_data)):
             if int(job_data[i]["job_number"]) == task_number:
@@ -553,12 +522,14 @@ def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedul
                     if total_load > resource_data[i]["capacity"]:
                         conflicting_tasks.append(task_number)
                         actual_conflicts = set(conflicting_tasks)
-        prioritize_tasks(actual_conflicts, selected_rule, task_number)
+        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number)
+        return(schedule_next)
 
 def prioritize_tasks(actual_conflicts, selected_rule, task_number):
 
     if selected_rule == 0:
         print("Not prioritizing!")
+        return(task_number)
     elif selected_rule == 1:
         prioritize_by_number(task_number, actual_conflicts)
 
@@ -569,7 +540,7 @@ def prioritize_by_number(task_number, actual_conflicts):
     else:
         prioritized = sorted(actual_conflicts)
         schedule_next = prioritized[0]
-    print(schedule_next)
+    return(schedule_next)
 
 def select_rule():
     selected_rule = 0
