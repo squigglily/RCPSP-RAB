@@ -6,7 +6,8 @@ def main():
         project_number = openfile()
     elif new_or_rerun == "E":
         project_number = input("\nPlease type the project number: ")
-        pull_inputs(project_number)
+        selected_rule = select_rule()
+        pull_inputs(project_number, selected_rule)
     elif new_or_rerun == "Q":
         print("\nExiting RCPSP-Lab.\n")
     else:
@@ -36,7 +37,8 @@ def openfile():
 
     project_number = name_project()
     make_dictionary(csv_data,project_number)
-    pull_inputs(project_number)
+    selected_rule = select_rule()
+    pull_inputs(project_number, selected_rule)
     return(project_number)
 
 def find_nth(haystack, needle, n):
@@ -197,7 +199,7 @@ def resources_fill(resource_dictionary,project_number):
     #storage = c.fetchall()
     #print(storage)
 
-def pull_inputs(project_number):
+def pull_inputs(project_number, selected_rule):
     import _mysql
     import MySQLdb
     import MySQLdb.cursors
@@ -217,9 +219,9 @@ def pull_inputs(project_number):
         ([project_number]))
     resource_data = c.fetchall()
 
-    conditions_table(project_number,job_data, resource_data)
+    conditions_table(project_number,job_data, resource_data, selected_rule)
 
-def conditions_table(project_number,job_data,resource_data):
+def conditions_table(project_number,job_data,resource_data, selected_rule):
     import json
 
     task_pairs = []
@@ -232,7 +234,7 @@ def conditions_table(project_number,job_data,resource_data):
                 successors[i] = 0
             task_pairs.append((predecessor,int(successors[i])))
     #schedule_tasks(project_number,job_data,task_pairs, resource_data)
-    schedule_with_constraints(project_number,job_data,task_pairs, resource_data)
+    schedule_with_constraints(project_number,job_data,task_pairs, resource_data, selected_rule)
 
 def schedule_tasks(project_number,job_data,task_pairs, resource_data):
     scheduled_tasks = []
@@ -407,7 +409,7 @@ def graph_schedule(project_number,job_data,schedule):
     show(row(p,widgetbox(data_table)))
     reset_output()
 
-def schedule_with_constraints(project_number,job_data,task_pairs, resource_data):
+def schedule_with_constraints(project_number,job_data,task_pairs, resource_data, selected_rule):
     scheduled_tasks = []
     to_schedule = []
     task_durations = []
@@ -456,7 +458,7 @@ def schedule_with_constraints(project_number,job_data,task_pairs, resource_data)
             for k, v in task_pairs:
                 if v == i:
                     predecessors.append(schedule[k]["end_time"])
-            check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data)
+            check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data, selected_rule)
             schedule[i] = {}
             schedule[i]["start_time"] = max(predecessors)
             for task, duration in task_durations:
@@ -505,12 +507,14 @@ def schedule_with_constraints(project_number,job_data,task_pairs, resource_data)
 #                 else:
 #                     print("The resource is shared among tasks, but there is capacity to start.")
 
-def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data):
+def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data, selected_rule):
     # Check to see if there is enough capacity to perform the task.
     task_number = i
     desired_start = max(predecessors)
     potential_conflicts = []
     conflict_details = {}
+    actual_conflicts = []
+    conflicting_tasks = []
 
     for i in range(0,len(job_data)):
         if int(job_data[i]["job_number"]) == task_number:
@@ -543,9 +547,46 @@ def check_constraints(i,project_number,job_data,predecessors,schedule,to_schedul
                 if conflict_details[i]["start_time"] <= time and conflict_details[i]["start_time"] + conflict_details[i]["duration"] > time:
                     if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"] and i != task_number:
                         total_load = total_load + job_data[i]["resource_load"]
+                        conflicting_tasks.append(i)
             for i in range(0,len(resource_data)):
                 if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
                     if total_load > resource_data[i]["capacity"]:
-                        print("Oh noes!  The resource requirements have exceeded the capacity!")
-                    else:
-                        print("The resource is shared among tasks, but there is capacity at this time.")
+                        conflicting_tasks.append(task_number)
+                        actual_conflicts = set(conflicting_tasks)
+        prioritize_tasks(actual_conflicts, selected_rule, task_number)
+
+def prioritize_tasks(actual_conflicts, selected_rule, task_number):
+
+    if selected_rule == 0:
+        print("Not prioritizing!")
+    elif selected_rule == 1:
+        prioritize_by_number(task_number, actual_conflicts)
+
+def prioritize_by_number(task_number, actual_conflicts):
+    # Prioritize tasks based on task number and nothing else.
+    if len(actual_conflicts) == 0:
+        schedule_next = task_number
+    else:
+        prioritized = sorted(actual_conflicts)
+        schedule_next = prioritized[0]
+    print(schedule_next)
+
+def select_rule():
+    selected_rule = 0
+    selected_rule = input("\nPlease type the number corresponding with the " 
+    "prioritization rule you would like to use: "
+    "\n    0 - No prioritization, ignore all resource constraints"
+    "\n    1 - Lowest task number prioritization\n")
+
+    try:
+        int(selected_rule) + 1 - 1
+    except:
+        print("\nYou have entered an invalid rule number.  Please try again.\n")
+        select_rule()
+
+    if int(selected_rule) >= 0 and int(selected_rule) <= 1:
+        selected_rule = int(selected_rule)
+        return(selected_rule)
+    else:
+        print("\nYou have entered an invalid rule number.  Please try again.\n")
+        select_rule()
