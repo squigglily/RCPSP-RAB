@@ -487,8 +487,7 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
     conflict_details = {}
     actual_conflicts = []
     conflicting_tasks = [task_number]
-    print("Current schedule: %s" %schedule)
-    print("Tasks to Schedule: %s" %to_schedule)
+
     for i in range(0,len(job_data)):
         if int(job_data[i]["job_number"]) == task_number:
             duration = job_data[i]["duration"]
@@ -526,23 +525,18 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
                 conflict_details[job_data[i]["job_number"]]["start_time"] = schedule[job_data[i]["job_number"]]["start_time"]
                 conflict_details[job_data[i]["job_number"]]["duration"] = job_data[i]["duration"]
         for time in range(desired_start, desired_start + duration):
-            total_load = job_data[task_number]["resource_load"]
+            total_load = conflict_details[task_number]["resource_load"]
             for i in potential_conflicts:
-                print("Potential conflict: %d" %i)
                 if conflict_details[i]["start_time"] <= time and conflict_details[i]["start_time"] + conflict_details[i]["duration"] > time:
                     if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"] and i != task_number:
                         total_load = total_load + conflict_details[i]["resource_load"]
                         conflicting_tasks.append(i)
-            print("Time: %d" %time)
-            print("Total load: %d" %total_load)
             for i in range(0,len(resource_data)):
                 if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
                     if total_load > resource_data[i]["capacity"]:
                         conflicting_tasks.append(task_number)
                         actual_conflicts = set(conflicting_tasks)
-        print("Task: %d" % task_number)
         schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number)
-        print(schedule_next)
         return(schedule_next)
 
 def prioritize_tasks(actual_conflicts, selected_rule, task_number):
