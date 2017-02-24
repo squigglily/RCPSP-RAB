@@ -536,15 +536,18 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
                     if total_load > resource_data[i]["capacity"]:
                         conflicting_tasks.append(task_number)
                         actual_conflicts = set(conflicting_tasks)
-        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number)
+        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details)
         return(schedule_next)
 
-def prioritize_tasks(actual_conflicts, selected_rule, task_number):
+def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details):
 
     if selected_rule == 0:
         return(task_number)
     elif selected_rule == 1:
         priority = prioritize_by_number(task_number, actual_conflicts)
+        return(priority)
+    elif selected_rule == 2:
+        priority = prioritize_by_demand(task_number, actual_conflicts, conflict_details)
         return(priority)
 
 def prioritize_by_number(task_number, actual_conflicts):
@@ -554,14 +557,29 @@ def prioritize_by_number(task_number, actual_conflicts):
     else:
         prioritized = sorted(actual_conflicts)
         schedule_next = prioritized[0]
+
     return(schedule_next)
+
+def prioritize_by_demand(task_number, actual_conflicts, conflict_details):
+    max_load = conflict_details[task_number]["resource_load"]
+    schedule_next = task_number
+
+    for i in conflict_details:
+        if i != task_number and conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+            if conflict_details[i]["resource_load"] > max_load:
+                max_load = conflict_details[i]["resource_load"]
+                schedule_next = i
+
+    return(schedule_next)
+
 
 def select_rule():
     selected_rule = 0
     selected_rule = input("\nPlease type the number corresponding with the " 
     "prioritization rule you would like to use: "
     "\n    0 - No prioritization, ignore all resource constraints"
-    "\n    1 - Lowest task number prioritization\n")
+    "\n    1 - Lowest task number prioritization"
+    "\n    2 - Highest resource demand \n")
 
     try:
         int(selected_rule) + 1 - 1
@@ -570,7 +588,7 @@ def select_rule():
         return(selected_rule)
         select_rule()
 
-    if int(selected_rule) >= 0 and int(selected_rule) <= 1:
+    if int(selected_rule) >= 0 and int(selected_rule) <= 2:
         selected_rule = int(selected_rule)
         return(selected_rule)
     else:
@@ -636,58 +654,3 @@ def schedule_in_time(project_number,job_data,task_pairs, resource_data, selected
     # Publish the completed schedule.
     schedule_fill(project_number, job_data, schedule, selected_rule)
     graph_schedule(project_number,job_data,schedule)
-
-
-    # # Schedule any tasks that do not have predecessors - need to fix to deal with tasks with 0 as predecessor
-    # for k, v in task_pairs:
-    #     if k not in [i[1] for i in task_pairs]:
-    #         to_schedule.append(k)
-
-    # to_schedule = set(to_schedule)
-    # schedule = {}
-
-    # for i in to_schedule:
-    #     schedule[i] = {}
-    #     schedule[i]["start_time"] = 0
-    #     for task, duration in task_durations:
-    #         if task == i:
-    #             task_length = duration
-
-    #     schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
-
-    # # Schedule tasks whose predecessors have all been scheduled.
-    # limited_task_pairs = task_pairs
-
-    # while limited_task_pairs:
-    #     for i in to_schedule:
-    #         limited_task_pairs = list(filter(lambda k : k[0] != i, limited_task_pairs))
-
-    #     to_schedule = []
-
-    #     for k, v in limited_task_pairs:
-    #         if k not in [i[1] for i in limited_task_pairs]:
-    #             to_schedule.append(k)
-
-    #     to_schedule = set(to_schedule)
-    #     print(to_schedule)
-    #     print(task_pairs)
-    #     for i in to_schedule:
-    #         predecessors = []
-    #         for k, v in task_pairs:
-    #             if v == i:
-    #                 predecessors.append(schedule[k]["end_time"])
-    #         next_task = check_constraints(i,project_number,job_data,predecessors,schedule,to_schedule, resource_data, selected_rule)
-    #         predecessors = []
-    #         for k, v in task_pairs:
-    #             if v == next_task:
-    #                 predecessors.append(schedule[k]["end_time"])
-    #         schedule[next_task] = {}
-    #         schedule[next_task]["start_time"] = max(predecessors)
-    #         for task, duration in task_durations:
-    #             if task == next_task:
-    #                 task_length = duration
-
-    #         schedule[next_task]["end_time"] = schedule[next_task]["start_time"] + task_length
-
-    # schedule_fill(project_number, job_data, schedule, schedule_properties)
-    # graph_schedule(project_number,job_data,schedule)
