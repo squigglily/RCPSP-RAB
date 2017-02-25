@@ -479,7 +479,7 @@ def graph_schedule(project_number,job_data,schedule):
 #     schedule_fill(project_number, job_data, schedule, schedule_properties)
 #     graph_schedule(project_number,job_data,schedule)
 
-def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resource_data, selected_rule):
+def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resource_data, selected_rule, task_pairs):
     # Check to see if there is enough capacity to perform the task.
     task_number = i
     desired_start = t
@@ -536,10 +536,10 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
                     if total_load > resource_data[i]["capacity"]:
                         conflicting_tasks.append(task_number)
                         actual_conflicts = set(conflicting_tasks)
-        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details)
+        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs)
         return(schedule_next)
 
-def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details):
+def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs):
 
     if selected_rule == 0:
         return(task_number)
@@ -548,6 +548,9 @@ def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_deta
         return(priority)
     elif selected_rule == 2:
         priority = prioritize_by_demand(task_number, actual_conflicts, conflict_details)
+        return(priority)
+    elif selected_rule == 3:
+        priority = prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs)
         return(priority)
 
 def prioritize_by_number(task_number, actual_conflicts):
@@ -572,6 +575,24 @@ def prioritize_by_demand(task_number, actual_conflicts, conflict_details):
 
     return(schedule_next)
 
+def prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs):
+    for i in conflict_details:
+        conflict_details[i]["successor_list"] = [i]
+        for j in conflict_details[i]["successor_list"]:
+            for k, v in task_pairs:
+                if k == j:
+                    conflict_details[i]["successor_list"].append(v)
+        conflict_details[i]["successor_list"] = list(filter(lambda k : k != 0, conflict_details[i]["successor_list"]))
+        conflict_details[i]["successor_list"] = set(conflict_details[i]["successor_list"])
+    schedule_next = task_number
+    num_successors = len(conflict_details[task_number]["successor_list"])
+    for i in conflict_details:
+        if i != task_number and conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+            if len(conflict_details[i]["successor_list"]) > num_successors:
+                schedule_next = i
+                num_successors = len(conflict_details[i]["successor_list"])
+
+    return(schedule_next)
 
 def select_rule():
     selected_rule = 0
@@ -579,7 +600,8 @@ def select_rule():
     "prioritization rule you would like to use: "
     "\n    0 - No prioritization, ignore all resource constraints"
     "\n    1 - Lowest task number prioritization"
-    "\n    2 - Highest resource demand \n")
+    "\n    2 - Highest resource demand"
+    "\n    3 - Most total successors\n")
 
     try:
         int(selected_rule) + 1 - 1
@@ -588,7 +610,7 @@ def select_rule():
         return(selected_rule)
         select_rule()
 
-    if int(selected_rule) >= 0 and int(selected_rule) <= 2:
+    if int(selected_rule) >= 0 and int(selected_rule) <= 3:
         selected_rule = int(selected_rule)
         return(selected_rule)
     else:
@@ -632,7 +654,7 @@ def schedule_in_time(project_number,job_data,task_pairs, resource_data, selected
             # Check to see if predecessors are complete.
             # Then, check to see if this task is prioritized.
             if all(j <= t for j in predecessors):
-                next_task = check_constraints(i, project_number, job_data, t, schedule, to_schedule, resource_data, selected_rule)
+                next_task = check_constraints(i, project_number, job_data, t, schedule, to_schedule, resource_data, selected_rule, task_pairs)
                 # Check to see if this task is prioritized and then schedule if so.
                 if next_task == i:
                     schedule[i] = {}
