@@ -536,10 +536,10 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
                     if total_load > resource_data[i]["capacity"]:
                         conflicting_tasks.append(task_number)
                         actual_conflicts = set(conflicting_tasks)
-        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs)
+        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data)
         return(schedule_next)
 
-def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs):
+def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data):
 
     if selected_rule == 0:
         return(task_number)
@@ -551,6 +551,15 @@ def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_deta
         return(priority)
     elif selected_rule == 3:
         priority = prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs)
+        return(priority)
+    elif selected_rule == 4:
+        priority = prioritize_by_finish_time(task_number, actual_conflicts, conflict_details)
+        return(priority)
+    elif selected_rule == 5:
+        priority = prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pairs, job_data)
+        return(priority)
+    elif selected_rule == 6:
+        priority = prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data)
         return(priority)
 
 def prioritize_by_number(task_number, actual_conflicts):
@@ -564,13 +573,13 @@ def prioritize_by_number(task_number, actual_conflicts):
     return(schedule_next)
 
 def prioritize_by_demand(task_number, actual_conflicts, conflict_details):
-    max_load = conflict_details[task_number]["resource_load"]
+    max_load = conflict_details[task_number]["resource_load"] * conflict_details[task_number]["duration"]
     schedule_next = task_number
 
     for i in conflict_details:
         if i != task_number and conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
-            if conflict_details[i]["resource_load"] > max_load:
-                max_load = conflict_details[i]["resource_load"]
+            if conflict_details[i]["resource_load"] * conflict_details[i]["duration"] > max_load:
+                max_load = conflict_details[i]["resource_load"] * conflict_details[i]["duration"]
                 schedule_next = i
 
     return(schedule_next)
@@ -594,6 +603,65 @@ def prioritize_by_successors(task_number, actual_conflicts, conflict_details, ta
 
     return(schedule_next)
 
+def prioritize_by_finish_time(task_number, actual_conflicts, conflict_details):
+    max_time = conflict_details[task_number]["duration"]
+    schedule_next = task_number
+
+    for i in conflict_details:
+        if i != task_number and conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+            if conflict_details[i]["duration"] > max_time:
+                max_time = conflict_details[i]["duration"]
+                schedule_next = i
+
+    return(schedule_next)
+
+def prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pairs, job_data):
+    for i in conflict_details:
+        conflict_details[i]["successor_list"] = [i]
+        for k, v in task_pairs:
+            if k == i:
+                conflict_details[i]["successor_list"].append(v)
+        conflict_details[i]["successor_list"] = list(filter(lambda k : k != 0, conflict_details[i]["successor_list"]))
+        conflict_details[i]["successor_list"] = set(conflict_details[i]["successor_list"])
+        conflict_details[i]["rpw"] = 0
+        for j in conflict_details[i]["successor_list"]:
+            for k in range(0,len(job_data)):
+                if job_data[k]["job_number"] == j:
+                    conflict_details[i]["rpw"] = conflict_details[i]["rpw"] + job_data[k]["duration"]
+    schedule_next = task_number
+    grpw = conflict_details[task_number]["rpw"]
+    for i in conflict_details:
+        if i != task_number and conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+            if conflict_details[i]["rpw"] > grpw:
+                schedule_next = i
+                grpw = conflict_details[i]["rpw"]
+
+    return(schedule_next)
+
+def prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data):
+    for i in conflict_details:
+        conflict_details[i]["successor_list"] = [i]
+        for j in conflict_details[i]["successor_list"]:
+            for k, v in task_pairs:
+                if k == j:
+                    conflict_details[i]["successor_list"].append(v)
+        conflict_details[i]["successor_list"] = list(filter(lambda k : k != 0, conflict_details[i]["successor_list"]))
+        conflict_details[i]["successor_list"] = set(conflict_details[i]["successor_list"])
+        conflict_details[i]["rpw"] = 0
+        for j in conflict_details[i]["successor_list"]:
+            for k in range(0,len(job_data)):
+                if job_data[k]["job_number"] == j:
+                    conflict_details[i]["rpw"] = conflict_details[i]["rpw"] + job_data[k]["duration"]
+    schedule_next = task_number
+    grpw = conflict_details[task_number]["rpw"]
+    for i in conflict_details:
+        if i != task_number and conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+            if conflict_details[i]["rpw"] > grpw:
+                schedule_next = i
+                grpw = conflict_details[i]["rpw"]
+
+    return(schedule_next)
+
 def select_rule():
     selected_rule = 0
     selected_rule = input("\nPlease type the number corresponding with the " 
@@ -601,7 +669,10 @@ def select_rule():
     "\n    0 - No prioritization, ignore all resource constraints"
     "\n    1 - Lowest task number prioritization"
     "\n    2 - Highest resource demand"
-    "\n    3 - Most total successors\n")
+    "\n    3 - Most total successors"
+    "\n    4 - Latest finish time"
+    "\n    5 - Greatest Rank Positional Weight"
+    "\n    6 - Greatest Rank Positional Weight*\n")
 
     try:
         int(selected_rule) + 1 - 1
@@ -610,7 +681,7 @@ def select_rule():
         return(selected_rule)
         select_rule()
 
-    if int(selected_rule) >= 0 and int(selected_rule) <= 3:
+    if int(selected_rule) >= 0 and int(selected_rule) <= 6:
         selected_rule = int(selected_rule)
         return(selected_rule)
     else:
