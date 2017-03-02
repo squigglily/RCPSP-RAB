@@ -407,18 +407,30 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
                     if total_load > resource_data[i]["capacity"]:
                         conflicting_tasks.append(task_number)
                         actual_conflicts = set(conflicting_tasks)
+
+        # Figure out if we can schedule even though not top priority.
         schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data)
         schedule_priority = schedule_next
         schedule_order.append(schedule_priority)
+        limited_conflict_details = dict(conflict_details)
         while schedule_priority != task_number:
             limited_conflicts = actual_conflicts
-            limited_conflicts.remove(schedule_priority)
-            schedule_priority = prioritize_tasks(limited_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data)
+            if schedule_priority in limited_conflicts:
+                limited_conflicts.remove(schedule_priority)
+            del limited_conflict_details[schedule_priority]
+            schedule_priority = prioritize_tasks(limited_conflicts, selected_rule, task_number, limited_conflict_details, task_pairs, job_data)
             schedule_order.append(schedule_priority)
 
         if len(schedule_order) > 1:
+            mod_load = 0
             for i in schedule_order:
-                #figure out if total load exceeds resource capacity
+                if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+                    mod_load = mod_load + conflict_details[i]["resource_load"]
+            for i in range(0,len(resource_data)):
+                if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+                    max_load = resource_data[i]["capacity"]
+            if mod_load <= max_load:
+                schedule_next = task_number
 
         return(schedule_next)
 
@@ -619,7 +631,6 @@ def schedule_in_time(project_number,job_data,task_pairs, resource_data, selected
                             if task_length == 0:
                                 length_exception = True
                     schedule[i]["end_time"] = schedule[i]["start_time"] + task_length
-                elif 
 
                     #If scheduled, remove task from limited task pairs.
                     limited_task_pairs = list(filter(lambda k : k[0] != i, limited_task_pairs))
