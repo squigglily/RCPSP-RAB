@@ -358,6 +358,7 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
     actual_conflicts = []
     conflicting_tasks = [task_number]
     schedule_order = []
+    max_load = 0
 
     for i in range(0,len(job_data)):
         if int(job_data[i]["job_number"]) == task_number:
@@ -368,71 +369,103 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
         if schedule[i]["start_time"] <= desired_start + duration and \
                 schedule[i]["end_time"] > desired_start:
             potential_conflicts.append(i)
+    
+    # Check to see if there is capacity for the task at the desired start time, based on previously scheduled tasks.
+    # for j in range(0,len(job_data)):
+    #     if int(job_data[j]["job_number"]) == task_number:
+    #         start_load = job_data[j]["resource_load"]
+    #         resource_number = job_data[j]["resource_number"]
 
-    # Add potential conflicts we are trying to schedule now.
-    for i in to_schedule:
-        potential_conflicts.append(i)
+    # for i in potential_conflicts:
+    #     for j in range(0, len(job_data)):
+    #         if int(job_data[j]["job_number"]) == i:
+    #             start_load = start_load + job_data[j]["resource_load"]
 
-    if len(potential_conflicts) <= 1:
-        return(task_number)
+    # for i in range(0,len(resource_data)):
+    #     if resource_data[i]["resource_number"] == resource_number:
+    #         max_load = resource_data[i]["capacity"]
+    
+    # if task_number == 17:
+    #     print("Time: %d" %desired_start)
+    #     print("Max Load: %d" %max_load)
+    #     print("Start Load: %d" %start_load)
+
+    # if start_load > max_load:
+    #     return(99999)
+
     else:
-        for i in range(0,len(job_data)):
-            if int(job_data[i]["job_number"]) == task_number:
-                conflict_details[task_number] = {}
-                conflict_details[task_number]["resource_number"] = job_data[i]["resource_number"]
-                conflict_details[task_number]["resource_load"] = job_data[i]["resource_load"]
-                conflict_details[task_number]["start_time"] = desired_start
-                conflict_details[task_number]["duration"] = duration
-            elif int(job_data[i]["job_number"]) in to_schedule:
-                conflict_details[job_data[i]["job_number"]] = {}
-                conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
-                conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
-                conflict_details[job_data[i]["job_number"]]["start_time"] = desired_start
-                conflict_details[job_data[i]["job_number"]]["duration"] = job_data[i]["duration"]
-            elif int(job_data[i]["job_number"]) in potential_conflicts:
-                conflict_details[job_data[i]["job_number"]] = {}
-                conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
-                conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
-                conflict_details[job_data[i]["job_number"]]["start_time"] = schedule[job_data[i]["job_number"]]["start_time"]
-                conflict_details[job_data[i]["job_number"]]["duration"] = job_data[i]["duration"]
-        for time in range(desired_start, desired_start + duration):
-            total_load = conflict_details[task_number]["resource_load"]
-            for i in potential_conflicts:
-                if conflict_details[i]["start_time"] <= time and conflict_details[i]["start_time"] + conflict_details[i]["duration"] > time:
-                    if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"] and i != task_number:
-                        total_load = total_load + conflict_details[i]["resource_load"]
-                        conflicting_tasks.append(i)
-            for i in range(0,len(resource_data)):
-                if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
-                    if total_load > resource_data[i]["capacity"]:
-                        conflicting_tasks.append(task_number)
-                        actual_conflicts = set(conflicting_tasks)
 
-        # Figure out if we can schedule even though not top priority.
-        schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data)
-        schedule_priority = schedule_next
-        schedule_order.append(schedule_priority)
-        limited_conflict_details = dict(conflict_details)
-        while schedule_priority != task_number:
-            limited_conflicts = actual_conflicts
-            if schedule_priority in limited_conflicts:
-                limited_conflicts.remove(schedule_priority)
-            del limited_conflict_details[schedule_priority]
-            schedule_priority = prioritize_tasks(limited_conflicts, selected_rule, task_number, limited_conflict_details, task_pairs, job_data)
-            schedule_order.append(schedule_priority)
+        # Add potential conflicts we are trying to schedule now.
+        for i in to_schedule:
+            potential_conflicts.append(i)
 
-        if len(schedule_order) > 1:
-            mod_load = 0
-            for i in schedule_order:
-                if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
-                    mod_load = mod_load + conflict_details[i]["resource_load"]
-            for i in range(0,len(resource_data)):
-                if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
-                    max_load = resource_data[i]["capacity"]
-            if mod_load <= max_load:
-                schedule_next = task_number
+        if len(potential_conflicts) <= 1:
+            return(task_number)
+        else:
+            for i in range(0,len(job_data)):
+                if int(job_data[i]["job_number"]) == task_number:
+                    conflict_details[task_number] = {}
+                    conflict_details[task_number]["resource_number"] = job_data[i]["resource_number"]
+                    conflict_details[task_number]["resource_load"] = job_data[i]["resource_load"]
+                    conflict_details[task_number]["start_time"] = desired_start
+                    conflict_details[task_number]["duration"] = duration
+                elif int(job_data[i]["job_number"]) in to_schedule:
+                    conflict_details[job_data[i]["job_number"]] = {}
+                    conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
+                    conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
+                    conflict_details[job_data[i]["job_number"]]["start_time"] = desired_start
+                    conflict_details[job_data[i]["job_number"]]["duration"] = job_data[i]["duration"]
+                elif int(job_data[i]["job_number"]) in potential_conflicts:
+                    conflict_details[job_data[i]["job_number"]] = {}
+                    conflict_details[job_data[i]["job_number"]]["resource_number"] = job_data[i]["resource_number"]
+                    conflict_details[job_data[i]["job_number"]]["resource_load"] = job_data[i]["resource_load"]
+                    conflict_details[job_data[i]["job_number"]]["start_time"] = schedule[job_data[i]["job_number"]]["start_time"]
+                    conflict_details[job_data[i]["job_number"]]["duration"] = job_data[i]["duration"]
+            for time in range(desired_start, desired_start + duration):
+                total_load = conflict_details[task_number]["resource_load"]
+                for i in potential_conflicts:
+                    if conflict_details[i]["start_time"] <= time and conflict_details[i]["start_time"] + conflict_details[i]["duration"] > time:
+                        if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"] and i != task_number:
+                            total_load = total_load + conflict_details[i]["resource_load"]
+                            conflicting_tasks.append(i)
+                for i in range(0,len(resource_data)):
+                    if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+                        if total_load > resource_data[i]["capacity"]:
+                            conflicting_tasks.append(task_number)
+                            actual_conflicts = set(conflicting_tasks)
 
-        return(schedule_next)
+            schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data)
+
+            # Figure out if we can schedule even though not top priority.
+            if schedule_next != task_number:
+                schedule_priority = schedule_next
+                schedule_order.append(schedule_priority)
+                limited_conflict_details = dict(conflict_details)
+                mod_load = []
+                while schedule_priority != task_number:
+                    limited_conflicts = actual_conflicts
+                    if schedule_priority in limited_conflicts:
+                        limited_conflicts.remove(schedule_priority)
+                    del limited_conflict_details[schedule_priority]
+                    schedule_priority = prioritize_tasks(limited_conflicts, selected_rule, task_number, limited_conflict_details, task_pairs, job_data)
+                    schedule_order.append(schedule_priority)
+
+                for i in range(0,len(resource_data)):
+                    if resource_data[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+                        max_load = resource_data[i]["capacity"]
+
+                for time in range(desired_start, desired_start + duration):
+                    time_load = 0
+                    for i in schedule_order:
+                        if conflict_details[i]["start_time"] <= time and conflict_details[i]["start_time"] + conflict_details[i]["duration"] > time:
+                            if conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
+                                time_load = time_load + conflict_details[i]["resource_load"]
+                    mod_load.append(time_load)
+                
+                if all(i <= max_load for i in mod_load):
+                        schedule_next = task_number
+
+            return(schedule_next)
 
 def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data):
 
