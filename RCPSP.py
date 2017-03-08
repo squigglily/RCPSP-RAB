@@ -17,6 +17,68 @@ def main():
     #project_number = openfile()
     # to get raw printout, print(repr(<string>))
 
+
+def autorun(selected_rule):
+    for i in range(2,49):
+        for j in range(1, 11):
+            file = "/home/squigglily/Documents/School Stuff/Grad School/Independent_Study/RCP/J30" + str(i) + "_" + str(j) + ".RCP"
+            project = "J30" + str(i) + "_" + str(j)
+            # Add data to database.
+            if selected_rule == 0:
+                project_number = auto_open(file, selected_rule, project)
+            else:
+                project_number = project_number
+                selected_rule = selected_rule
+                pull_inputs(project_number, selected_rule, project)
+
+def auto_open(file, selected_rule, project):
+    import sys
+
+    f = open(file,"r")
+    raw_data = f.read()
+
+    if raw_data[0].isnumeric() and raw_data[raw_data.find("\n") + 1].isnumeric():
+        print("Converting RCP file to appropriate format...")
+        csv_data = convert_rcp(raw_data)
+    elif (raw_data[0:9] == "Resources" and raw_data[find_nth(raw_data,"\n",4) +
+            1:find_nth(raw_data,"\n",4) + 6] == "Tasks"):
+        print("File is in appropriate format!")
+        csv_data = import_csv(file)
+    else:
+        print("Error - the selected file appears to be in the wrong format.")
+        sys.exit()
+
+    project_number = autoname_project(project)
+    make_dictionary(csv_data,project_number)
+    selected_rule = selected_rule
+    pull_inputs(project_number, selected_rule)
+    return(project_number)
+
+def autoname_project(project):
+    import _mysql
+    import MySQLdb
+    
+    project_name = project
+
+    db = MySQLdb.connect("localhost", "root", "stinkydogfarts", 
+        "scheduling_problems")
+    c = db.cursor()
+    current_results = c.execute("""SELECT project_name FROM projects WHERE 
+        project_name = (%s)""", ([project_name]))
+    if current_results > 0:
+        print("Sorry, this name has been used before.  Please try again.")
+        return(project_name)
+        name_project()
+    else:
+        c.execute("""INSERT INTO projects (project_name)
+                        VALUES(%s)""",
+                        ([project_name]))
+        db.commit()
+        c.execute("""SELECT project_id FROM projects WHERE 
+        project_name = (%s)""", ([project_name]))
+        project_number = int(c.fetchone()[0])
+        return(project_number)
+
 def openfile():
     import sys
 
@@ -674,4 +736,4 @@ def schedule_in_time(project_number,job_data,task_pairs, resource_data, selected
 
     # Publish the completed schedule.
     schedule_fill(project_number, job_data, schedule, selected_rule)
-    graph_schedule(project_number,job_data,schedule)
+    #graph_schedule(project_number,job_data,schedule)
