@@ -19,17 +19,25 @@ def main():
 
 
 def autorun(selected_rule):
-    for i in range(2,49):
-        for j in range(1, 11):
-            file = "/home/squigglily/Documents/School Stuff/Grad School/Independent_Study/RCP/J30" + str(i) + "_" + str(j) + ".RCP"
-            project = "J30" + str(i) + "_" + str(j)
-            # Add data to database.
-            if selected_rule == 0:
-                project_number = auto_open(file, selected_rule, project)
-            else:
-                project_number = project_number
-                selected_rule = selected_rule
-                pull_inputs(project_number, selected_rule, project)
+    # Add new project to file
+    # for i in range(2,49):
+    #     for j in range(1, 11):
+    #         file = "/home/squigglily/Documents/School Stuff/Grad School/Independent_Study/RCP/J30" + str(i) + "_" + str(j) + ".RCP"
+    #         project = "J30" + str(i) + "_" + str(j)
+    #         # Add data to database.
+    #         if selected_rule == 0:
+    #             project_number = auto_open(file, selected_rule, project)
+    #         else:
+    #             project_number = project_number
+    #             selected_rule = selected_rule
+    #             pull_inputs(project_number, selected_rule, project)
+
+    # Run selected rule on all "real" data available
+    for i in range(43,523):
+        project_number = i
+        selected_rule = selected_rule
+        pull_inputs(project_number, selected_rule)        
+
 
 def auto_open(file, selected_rule, project):
     import sys
@@ -433,27 +441,22 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
             potential_conflicts.append(i)
     
     # Check to see if there is capacity for the task at the desired start time, based on previously scheduled tasks.
-    # for j in range(0,len(job_data)):
-    #     if int(job_data[j]["job_number"]) == task_number:
-    #         start_load = job_data[j]["resource_load"]
-    #         resource_number = job_data[j]["resource_number"]
+    for j in range(0,len(job_data)):
+        if int(job_data[j]["job_number"]) == task_number:
+            start_load = job_data[j]["resource_load"]
+            resource_number = job_data[j]["resource_number"]
 
-    # for i in potential_conflicts:
-    #     for j in range(0, len(job_data)):
-    #         if int(job_data[j]["job_number"]) == i:
-    #             start_load = start_load + job_data[j]["resource_load"]
+    for i in potential_conflicts:
+        for j in range(0, len(job_data)):
+            if int(job_data[j]["job_number"]) == i and job_data[j]["resource_number"] == resource_number:
+                start_load = start_load + job_data[j]["resource_load"]
 
-    # for i in range(0,len(resource_data)):
-    #     if resource_data[i]["resource_number"] == resource_number:
-    #         max_load = resource_data[i]["capacity"]
-    
-    # if task_number == 17:
-    #     print("Time: %d" %desired_start)
-    #     print("Max Load: %d" %max_load)
-    #     print("Start Load: %d" %start_load)
+    for i in range(0,len(resource_data)):
+        if resource_data[i]["resource_number"] == resource_number:
+            max_load = resource_data[i]["capacity"]
 
-    # if start_load > max_load:
-    #     return(99999)
+    if start_load > max_load:
+        return(99999)
 
     else:
 
