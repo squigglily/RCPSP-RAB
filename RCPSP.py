@@ -537,38 +537,47 @@ def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_deta
     if selected_rule == 0:
         return(task_number)
     elif selected_rule == 1:
-        priority = prioritize_by_number(task_number, actual_conflicts)
+        priority = prioritize_by_number(task_number, actual_conflicts, selected_rule)
         return(priority)
     elif selected_rule == 2:
-        priority = prioritize_by_demand(task_number, actual_conflicts, conflict_details)
+        priority = prioritize_by_demand(task_number, actual_conflicts, conflict_details, selected_rule)
         return(priority)
     elif selected_rule == 3:
-        priority = prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs)
+        priority = prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs, selected_rule)
         return(priority)
     elif selected_rule == 4:
-        priority = prioritize_by_finish_time(task_number, actual_conflicts, conflict_details)
+        priority = prioritize_by_finish_time(task_number, actual_conflicts, conflict_details, selected_rule)
         return(priority)
     elif selected_rule == 5:
-        priority = prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pairs, job_data)
+        priority = prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
         return(priority)
     elif selected_rule == 6:
-        priority = prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data)
+        priority = prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
         return(priority)
     elif selected_rule == 7:
-        priority = prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data)
+        priority = prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
         return(priority)
 
-def prioritize_by_number(task_number, actual_conflicts):
+def prioritize_by_number(task_number, actual_conflicts, selected_rule):
     # Prioritize tasks based on task number and nothing else.
+    new_priorities = []
     if len(actual_conflicts) == 0:
         schedule_next = task_number
     else:
         prioritized = sorted(actual_conflicts)
         schedule_next = prioritized[0]
 
-    return(schedule_next)
+    for i in prioritized:
+        new_priorities.append((i, i))
 
-def prioritize_by_demand(task_number, actual_conflicts, conflict_details):
+    prioritized = new_priorities
+
+    if selected_rule > 6:
+        return(prioritized)
+    else:
+        return(schedule_next)
+
+def prioritize_by_demand(task_number, actual_conflicts, conflict_details, selected_rule):
     max_load = conflict_details[task_number]["resource_load"] * conflict_details[task_number]["duration"]
     schedule_next = task_number
     prioritized = [(task_number, conflict_details[task_number]["resource_load"] * conflict_details[task_number]["duration"])]
@@ -582,9 +591,13 @@ def prioritize_by_demand(task_number, actual_conflicts, conflict_details):
                 schedule_next = i
     
     prioritized = list(reversed(sorted(prioritized, key = lambda x: x[1])))
-    return(schedule_next)
+    
+    if selected_rule > 6:
+        return(prioritized)
+    else:
+        return(schedule_next)
 
-def prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs):
+def prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs, selected_rule):
     prioritized = [(task_number, len(conflict_details[task_number]["successor_list"]))]
 
     for i in conflict_details:
@@ -608,7 +621,7 @@ def prioritize_by_successors(task_number, actual_conflicts, conflict_details, ta
     prioritized = list(reversed(sorted(prioritized, key = lambda x: x[1])))
     return(schedule_next)
 
-def prioritize_by_finish_time(task_number, actual_conflicts, conflict_details):
+def prioritize_by_finish_time(task_number, actual_conflicts, conflict_details, selected_rule):
     max_time = conflict_details[task_number]["duration"]
     schedule_next = task_number
     prioritized = [(task_number, conflict_details[task_number]["duration"])]
@@ -621,9 +634,13 @@ def prioritize_by_finish_time(task_number, actual_conflicts, conflict_details):
                 max_time = conflict_details[i]["duration"]
                 schedule_next = i
     prioritized = list(reversed(sorted(prioritized, key = lambda x: x[1])))
-    return(schedule_next)
 
-def prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pairs, job_data):
+    if selected_rule > 6:
+        return(prioritized)
+    else:
+        return(schedule_next)
+
+def prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule):
     prioritized = []
 
     for i in conflict_details:
@@ -650,9 +667,13 @@ def prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pai
                 grpw = conflict_details[i]["rpw"]
     
     prioritized = list(reversed(sorted(prioritized, key = lambda x: x[1])))
-    return(schedule_next)
 
-def prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data):
+    if selected_rule > 6:
+        return(prioritized)
+    else:
+        return(schedule_next)
+
+def prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule):
     prioritized = []
     for i in conflict_details:
         conflict_details[i]["successor_list"] = [i]
@@ -679,11 +700,29 @@ def prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, tas
                 grpw = conflict_details[i]["rpw"]
     
     prioritized = list(reversed(sorted(prioritized, key = lambda x: x[1])))
-    return(schedule_next)
 
-def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data):
+    if selected_rule > 6:
+        return(prioritized)
+    else:
+        return(schedule_next)
 
-    return(schedule_next)
+def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule):
+
+    priority1 = prioritize_by_number(task_number, actual_conflicts, selected_rule)
+    priority2 = prioritize_by_demand(task_number, actual_conflicts, conflict_details, selected_rule)
+    priority3 = prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs, selected_rule)
+    priority4 = prioritize_by_finish_time(task_number, actual_conflicts, conflict_details, selected_rule)
+    priority5 = prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
+    priority6 = prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
+
+    lists = [priority1, priority2, priority3, priority4, priority5, priority6]
+
+    for i in lists:
+        for k, v in i:
+            if k == task_number:
+                location = i.index(k, v)
+                while i[location][1] == i[location - 1][1]:
+                    i[location - 1], i[location] = i[location], i[location - 1]
 
 def select_rule():
     selected_rule = 0
