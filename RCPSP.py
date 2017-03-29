@@ -499,7 +499,7 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
                             conflicting_tasks.append(task_number)
                             actual_conflicts = set(conflicting_tasks)
 
-            schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data)
+            schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data, t, schedule)
 
             # Figure out if we can schedule even though not top priority.
             if schedule_next != task_number:
@@ -512,7 +512,7 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
                     if schedule_priority in limited_conflicts:
                         limited_conflicts.remove(schedule_priority)
                     del limited_conflict_details[schedule_priority]
-                    schedule_priority = prioritize_tasks(limited_conflicts, selected_rule, task_number, limited_conflict_details, task_pairs, job_data)
+                    schedule_priority = prioritize_tasks(limited_conflicts, selected_rule, task_number, limited_conflict_details, task_pairs, job_data, t, schedule)
                     schedule_order.append(schedule_priority)
 
                 for i in range(0,len(resource_data)):
@@ -532,7 +532,7 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
 
             return(schedule_next)
 
-def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data):
+def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data, t, schedule):
 
     if selected_rule == 0:
         return(task_number)
@@ -555,7 +555,7 @@ def prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_deta
         priority = prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
         return(priority)
     elif selected_rule == 7:
-        priority = prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
+        priority = prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t)
         return(priority)
 
 def prioritize_by_number(task_number, actual_conflicts, selected_rule):
@@ -598,7 +598,8 @@ def prioritize_by_demand(task_number, actual_conflicts, conflict_details, select
         return(schedule_next)
 
 def prioritize_by_successors(task_number, actual_conflicts, conflict_details, task_pairs, selected_rule):
-    prioritized = [(task_number, len(conflict_details[task_number]["successor_list"]))]
+
+    #This is screwed up and returning just one value
 
     for i in conflict_details:
         conflict_details[i]["successor_list"] = [i]
@@ -610,6 +611,7 @@ def prioritize_by_successors(task_number, actual_conflicts, conflict_details, ta
         conflict_details[i]["successor_list"] = set(conflict_details[i]["successor_list"])
     schedule_next = task_number
     num_successors = len(conflict_details[task_number]["successor_list"])
+    prioritized = [(task_number, len(conflict_details[task_number]["successor_list"]))]
     for i in conflict_details:
         if i != task_number and conflict_details[i]["resource_number"] == conflict_details[task_number]["resource_number"]:
             priority = len(conflict_details[i]["successor_list"])
@@ -675,6 +677,7 @@ def prioritize_by_grpw(task_number, actual_conflicts, conflict_details, task_pai
 
 def prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule):
     prioritized = []
+
     for i in conflict_details:
         conflict_details[i]["successor_list"] = [i]
         for j in conflict_details[i]["successor_list"]:
@@ -706,7 +709,7 @@ def prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, tas
     else:
         return(schedule_next)
 
-def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule):
+def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t):
 
     priority1 = prioritize_by_number(task_number, actual_conflicts, selected_rule)
     priority2 = prioritize_by_demand(task_number, actual_conflicts, conflict_details, selected_rule)
@@ -719,10 +722,22 @@ def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, ta
 
     for i in lists:
         for k, v in i:
+            print(k,v)
             if k == task_number:
-                location = i.index(k, v)
+                location = i.index((k, v))
                 while i[location][1] == i[location - 1][1]:
                     i[location - 1], i[location] = i[location], i[location - 1]
+
+        schedule_details(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t, i)
+
+def schedule_details(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t, i):
+    to_schedule = []
+
+    for k, v in i:
+        to_schedule.append(k)
+
+    time = t
+
 
 def select_rule():
     selected_rule = 0
