@@ -621,7 +621,11 @@ def prioritize_by_successors(task_number, actual_conflicts, conflict_details, ta
                 num_successors = len(conflict_details[i]["successor_list"])
 
     prioritized = list(reversed(sorted(prioritized, key = lambda x: x[1])))
-    return(schedule_next)
+    
+    if selected_rule > 6:
+        return(prioritized)
+    else:
+        return(schedule_next)
 
 def prioritize_by_finish_time(task_number, actual_conflicts, conflict_details, selected_rule):
     max_time = conflict_details[task_number]["duration"]
@@ -722,7 +726,6 @@ def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, ta
 
     for i in lists:
         for k, v in i:
-            print(k,v)
             if k == task_number:
                 location = i.index((k, v))
                 while i[location][1] == i[location - 1][1]:
@@ -737,6 +740,12 @@ def schedule_details(task_number, actual_conflicts, conflict_details, task_pairs
         to_schedule.append(k)
 
     time = t
+
+    print(task_number)
+    print(actual_conflicts)
+    print(to_schedule)
+    print(conflict_details)
+    #while to_schedule:
 
 
 def select_rule():
