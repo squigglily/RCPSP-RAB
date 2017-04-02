@@ -731,10 +731,8 @@ def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, ta
                 while i[location][1] == i[location - 1][1] and location > 0:
                     i[location - 1], i[location] = i[location], i[location - 1]
                     location = i.index((k, v))
-
         priority_info.append(schedule_details(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t, i, resource_data))
-    print("Task Number: %d" %task_number)
-    print(priority_info)
+
     for i in priority_info:
         if i[1] < min_time_add:
             min_time_add = i[1]
@@ -769,7 +767,6 @@ def schedule_details(task_number, actual_conflicts, conflict_details, task_pairs
                     load = load + conflict_details[k]["resource_load"]
                 elif k in temp_schedule and conflict_details[k]["start_time"] <= time and conflict_details[k]["start_time"] + conflict_details[k]["duration"] > time:
                     load = load + conflict_details[k]["resource_load"]
-            print(load)
             if load > max_load:
                 time = time + 1
             else:
@@ -780,7 +777,6 @@ def schedule_details(task_number, actual_conflicts, conflict_details, task_pairs
                 #to_schedule.remove(j)
                 if temp_schedule[j]["start_time"] + temp_schedule[j]["duration"] - t > added_time:
                     added_time = temp_schedule[j]["start_time"] + temp_schedule[j]["duration"] - t
-    print(temp_schedule)
     if temp_schedule[task_number]["start_time"] == t:
         priority = task_number
     else:
