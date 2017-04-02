@@ -502,7 +502,7 @@ def check_constraints(i,project_number,job_data, t,schedule,to_schedule, resourc
             schedule_next = prioritize_tasks(actual_conflicts, selected_rule, task_number, conflict_details, task_pairs, job_data, t, schedule, resource_data)
 
             # Figure out if we can schedule even though not top priority.
-            if schedule_next != task_number:
+            if schedule_next != task_number and selected_rule < 7:
                 schedule_priority = schedule_next
                 schedule_order.append(schedule_priority)
                 limited_conflict_details = dict(conflict_details)
@@ -563,14 +563,13 @@ def prioritize_by_number(task_number, actual_conflicts, selected_rule):
     new_priorities = []
     if len(actual_conflicts) == 0:
         schedule_next = task_number
+        prioritized = [(task_number, task_number)]
     else:
         prioritized = sorted(actual_conflicts)
         schedule_next = prioritized[0]
-
-    for i in prioritized:
-        new_priorities.append((i, i))
-
-    prioritized = new_priorities
+        for i in prioritized:
+            new_priorities.append((i, i))
+        prioritized = new_priorities
 
     if selected_rule > 6:
         return(prioritized)
@@ -714,6 +713,8 @@ def prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, tas
         return(schedule_next)
 
 def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t, resource_data):
+    min_time_add = 99999
+    priority_info =[]
 
     priority1 = prioritize_by_number(task_number, actual_conflicts, selected_rule)
     priority2 = prioritize_by_demand(task_number, actual_conflicts, conflict_details, selected_rule)
@@ -723,19 +724,32 @@ def prioritize_by_multi_pass(task_number, actual_conflicts, conflict_details, ta
     priority6 = prioritize_by_grpw_star(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule)
 
     lists = [priority1, priority2, priority3, priority4, priority5, priority6]
-
     for i in lists:
         for k, v in i:
             if k == task_number:
                 location = i.index((k, v))
-                while i[location][1] == i[location - 1][1]:
+                while i[location][1] == i[location - 1][1] and location > 0:
                     i[location - 1], i[location] = i[location], i[location - 1]
+                    location = i.index((k, v))
 
-        schedule_details(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t, i, resource_data)
+        priority_info.append(schedule_details(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t, i, resource_data))
+    print("Task Number: %d" %task_number)
+    print(priority_info)
+    for i in priority_info:
+        if i[1] < min_time_add:
+            min_time_add = i[1]
+            schedule_next = i[0]
+        elif i[1] == min_time_add and i[0] == task_number:
+            min_time_add = i[1]
+            schedule_next = i[0]
+
+    return(schedule_next)
 
 def schedule_details(task_number, actual_conflicts, conflict_details, task_pairs, job_data, selected_rule, t, i, resource_data):
     to_schedule = []
-    temp_schedule = []
+    temp_schedule = {}
+    added_time = 0
+    priority = 99999
 
     for k, v in i:
         to_schedule.append(k)
@@ -747,27 +761,35 @@ def schedule_details(task_number, actual_conflicts, conflict_details, task_pairs
             max_load = resource_data[k]["capacity"]
 
     for j in to_schedule:
-        while j in to_schedule:
+        while j not in temp_schedule:
             # Check to see if task j can be scheduled now.
             load = conflict_details[j]["resource_load"]
             for k in actual_conflicts:
                 if conflict_details[k]["start_time"] <= time and k not in to_schedule and conflict_details[k]["start_time"] + conflict_details[k]["duration"] > time:
                     load = load + conflict_details[k]["resource_load"]
+                elif k in temp_schedule and conflict_details[k]["start_time"] <= time and conflict_details[k]["start_time"] + conflict_details[k]["duration"] > time:
+                    load = load + conflict_details[k]["resource_load"]
+            print(load)
             if load > max_load:
                 time = time + 1
             else:
-                temp_schedule[j] = []
+                temp_schedule[j] = {}
                 temp_schedule[j]["start_time"] = time
                 temp_schedule[j]["duration"] = conflict_details[j]["duration"]
                 conflict_details[j]["start_time"] = time
-                to_schedule.remove(j)
+                #to_schedule.remove(j)
+                if temp_schedule[j]["start_time"] + temp_schedule[j]["duration"] - t > added_time:
+                    added_time = temp_schedule[j]["start_time"] + temp_schedule[j]["duration"] - t
+    print(temp_schedule)
+    if temp_schedule[task_number]["start_time"] == t:
+        priority = task_number
+    else:
+        for j in temp_schedule:
+            if temp_schedule[j]["start_time"] == t:
+                priority = j
 
-    print(task_number)
-    print(actual_conflicts)
-    print(to_schedule)
-    print(conflict_details)
-
-    # Need to measure and return duration added to schedule.
+    priority_details = (priority, added_time)
+    return(priority_details)
 
 def select_rule():
     selected_rule = 0
@@ -854,5 +876,5 @@ def schedule_in_time(project_number,job_data,task_pairs, resource_data, selected
 
     # Publish the completed schedule.
     schedule_fill(project_number, job_data, schedule, selected_rule)
-    #graph_schedule(project_number,job_data,schedule)
+    graph_schedule(project_number,job_data,schedule)
 
